@@ -32,6 +32,7 @@ app.use((req, res, next) => {
             next();
             return;
         }
+        // validate email
         if(body.email && !/.{1,}@.{1,}\.{1,}/.test(body.email)) {
             res.send('Invalid email format\n');
             next();
@@ -52,13 +53,25 @@ app.get('/', (req, res) => {
 });
 app.post('/auth/sign-in', (req, res, next) => {
     req.on('end', () => {
-        if(req.body && req.body.email && req.body.password) {
-            res.sendStatus(200);
+        if(req.body && req.body.email && /.{1,}@.{1,}\.{1,}/.test(req.body.email) && req.body.password) {
+            try {
+                res.sendStatus(200);
+            } catch(exception) {
+                console.error(exception.message);
+            }
         }
     });
 });
 app.post('/auth/sign-up', (req, res) => {
-    res.sendStatus(201);
+    req.on('end', () => {
+        if(req.body && req.body.email && /.{1,}@.{1,}\.{1,}/.test(req.body.email) && req.body.password) {
+            try {
+                res.sendStatus(200);
+            } catch(exception) {
+                console.error(exception.message);
+            }
+        }
+    });
 });
 // start listening to the application on the defined port
 app.listen(port, () => {
