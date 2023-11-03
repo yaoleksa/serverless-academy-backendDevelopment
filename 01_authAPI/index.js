@@ -7,16 +7,25 @@ const port = process.env.PORT || 3000;
 // define application itself
 const app = express();
 // define middleware
+app.use(express.json({extended: false}));
 app.use((req, res, next) => {
-    // WARNING!!! It's not a real middleware
-    console.log('This is just am example. Real middleware will be added letter');
+    const data = [];
+    req.on('data', chunk => {
+        data.push(chunk);
+    });
+    req.on('end', () => {
+        req.body = JSON.parse(Buffer.concat(data).toString());
+    });
     next();
-});
+})
 // define method handlers
 app.get('/', (req, res) => {
     res.send(`successful request at: ${new Date()}`);
 });
 app.post('/auth/sign-in', (req, res) => {
+    req.on('end', () => {
+        console.log(`body now: ${req.body.email}`);
+    })
     res.sendStatus(200);
 });
 app.post('/auth/sign-up', (req, res) => {
