@@ -2,12 +2,21 @@
 const express = require('express');
 const pg = require('pg');
 const bcrypt = require('bcrypt');
+const { createClient } = require('@supabase/supabase-js');
 //define port
 const port = process.env.PORT || 3000;
 // define DB url
 const superbaseUrl = process.env.URL;
 // define API key
 const superbaseKey = process.env.KEY;
+// define superbase client
+const superbase = createClient(superbaseUrl, superbaseKey);
+superbase.auth.signInWithPassword({
+    email: "mryaremchyk@gmail.com",
+    password: "Default_password#1"
+}).then(data => {
+    console.log(data);
+})
 // conect with DB
 const client = new pg.Client({
     host: process.env.DBHOST,
@@ -21,12 +30,12 @@ const app = express();
 // define middleware
 app.use(express.json({extended: false}));
 app.use((req, res, next) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Accept', 'application/json');
     if(req.method == 'GET') {
         next();
         return;
     }
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Accept', 'application/json');
     const data = [];
     req.on('data', chunk => {
         data.push(chunk);
@@ -60,11 +69,9 @@ app.use((req, res, next) => {
 });
 // define method handlers
 app.get('/', (req, res) => {
-    client.connect().then(() => {
-        client.query('SELECT * FROM "Users";').then(data => {
-            console.log(data.rows);
-        });
-    })
+    client.query('SELECT * FROM "Users";').then(data => {
+        console.log(data.rows);
+    });
     res.send(`successful request at: ${new Date()}`);
 });
 app.post('/auth/sign-in', (req, res, next) => {
@@ -101,8 +108,9 @@ app.post('/auth/sign-up', (req, res) => {
                         if(err) {
                             console.log(err.message);
                         }
-                        client.query(`INSERT INTO PUBLIC."Users" (email, password) VALUES (\'${req.body.email}\', \'${hash}\');`).then(response => {
-                            console.log(response);
+                        superbase.auth.signUp({
+                            email: req.body.email,
+                            password: hash,
                         });
                     });
                 });
