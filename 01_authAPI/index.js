@@ -15,6 +15,7 @@ const client = new pg.Client({
     user: process.env.DBUSER,
     password: process.env.DBPASSWORD
 });
+client.connect();
 // define application itself
 const app = express();
 // define middleware
@@ -70,6 +71,17 @@ app.post('/auth/sign-in', (req, res, next) => {
     req.on('end', () => {
         if(req.body && req.body.email && /.{1,}@.{1,}\.{1,}/.test(req.body.email) && req.body.password) {
             try {
+                bcrypt.genSalt((err, salt) => {
+                    if(err) {
+                        console.log(err.message);
+                    }
+                    bcrypt.hash(req.body.password, salt, (err, hash) => {
+                        if(err) {
+                            console.log(err.message);
+                        }
+                        console.log(`hash password: ${hash}`);
+                    });
+                });
                 res.sendStatus(200);
             } catch(exception) {
                 console.error(exception.message);
@@ -81,6 +93,19 @@ app.post('/auth/sign-up', (req, res) => {
     req.on('end', () => {
         if(req.body && req.body.email && /.{1,}@.{1,}\.{1,}/.test(req.body.email) && req.body.password) {
             try {
+                bcrypt.genSalt((err, salt) => {
+                    if(err) {
+                        console.error(`genSaltError: ${err.message}`);
+                    }
+                    bcrypt.hash(req.body.password, salt, (err, hash) => {
+                        if(err) {
+                            console.log(err.message);
+                        }
+                        client.query(`INSERT INTO PUBLIC."Users" (email, password) VALUES (\'${req.body.email}\', \'${hash}\');`).then(response => {
+                            console.log(response);
+                        });
+                    });
+                });
                 res.sendStatus(200);
             } catch(exception) {
                 console.error(exception.message);
