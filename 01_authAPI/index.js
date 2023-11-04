@@ -2,9 +2,19 @@
 const express = require('express');
 const pg = require('pg');
 const bcrypt = require('bcrypt');
-const { createClient } = require('@supabase/supabase-js');
 //define port
 const port = process.env.PORT || 3000;
+// define DB url
+const superbaseUrl = process.env.URL;
+// define API key
+const superbaseKey = process.env.KEY;
+// conect with DB
+const client = new pg.Client({
+    host: process.env.DBHOST,
+    port: process.env.DBPORT,
+    user: process.env.DBUSER,
+    password: process.env.DBPASSWORD
+});
 // define application itself
 const app = express();
 // define middleware
@@ -49,6 +59,11 @@ app.use((req, res, next) => {
 });
 // define method handlers
 app.get('/', (req, res) => {
+    client.connect().then(() => {
+        client.query('SELECT * FROM "Users";').then(data => {
+            console.log(data.rows);
+        });
+    })
     res.send(`successful request at: ${new Date()}`);
 });
 app.post('/auth/sign-in', (req, res, next) => {
