@@ -122,7 +122,6 @@ app.post('/auth/sign-up', (req, res) => {
                         })
                     });
                 });
-                res.sendStatus(200);
             } catch(exception) {
                 console.error(exception.message);
             }
