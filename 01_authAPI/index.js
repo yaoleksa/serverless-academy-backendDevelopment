@@ -11,12 +11,9 @@ const superbaseUrl = process.env.URL;
 const superbaseKey = process.env.KEY;
 // define superbase client
 const superbase = createClient(superbaseUrl, superbaseKey);
-superbase.auth.signInWithPassword({
-    email: "mryaremchyk@gmail.com",
-    password: "Default_password#1"
-}).then(data => {
-    console.log(data);
-})
+// variables to store tokens
+let refreshToken;
+let token;
 // conect with DB
 const client = new pg.Client({
     host: process.env.DBHOST,
@@ -68,28 +65,28 @@ app.use((req, res, next) => {
     next();
 });
 // define method handlers
-app.get('/', (req, res) => {
-    client.query('SELECT * FROM "Users";').then(data => {
-        console.log(data.rows);
-    });
-    res.send(`successful request at: ${new Date()}`);
+app.get('/me', (req, res) => {
+    //
 });
 app.post('/auth/sign-in', (req, res, next) => {
     req.on('end', () => {
         if(req.body && req.body.email && /.{1,}@.{1,}\.{1,}/.test(req.body.email) && req.body.password) {
             try {
-                bcrypt.genSalt((err, salt) => {
-                    if(err) {
-                        console.log(err.message);
-                    }
-                    bcrypt.hash(req.body.password, salt, (err, hash) => {
-                        if(err) {
-                            console.log(err.message);
+                superbase.auth.signInWithPassword({
+                    email: req.body.email,
+                    password: req.body.password
+                }).then(response => {
+                    token = response.data.session.access_token;
+                    refreshToken = response.data.session.refresh_token;
+                    res.send({
+                        "success": true,
+                        "data": {
+                            "id": response.data.user.id,
+                            "accessToken": token,
+                            "refreshToken": refreshToken
                         }
-                        console.log(`hash password: ${hash}`);
                     });
-                });
-                res.sendStatus(200);
+                })
             } catch(exception) {
                 console.error(exception.message);
             }
