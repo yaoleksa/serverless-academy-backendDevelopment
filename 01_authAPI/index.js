@@ -78,14 +78,14 @@ app.post('/auth/sign-in', (req, res, next) => {
                 }).then(response => {
                     token = response.data.session.access_token;
                     refreshToken = response.data.session.refresh_token;
-                    res.send({
+                    res.send(JSON.stringify({
                         "success": true,
                         "data": {
                             "id": response.data.user.id,
                             "accessToken": token,
                             "refreshToken": refreshToken
                         }
-                    });
+                    }, null, 2) + '\n');
                 })
             } catch(exception) {
                 console.error(exception.message);
@@ -108,7 +108,18 @@ app.post('/auth/sign-up', (req, res) => {
                         superbase.auth.signUp({
                             email: req.body.email,
                             password: hash,
-                        });
+                        }).then(response => {
+                            token = response.data.session.access_token;
+                            refreshToken = response.data.session.refresh_token;
+                            res.send(JSON.stringify({
+                                "success": true,
+                                "data": {
+                                    "id": response.data.user.id,
+                                    "accessToken": token,
+                                    "refreshToken": refreshToken
+                                }
+                            }, null, 2) + '\n');
+                        })
                     });
                 });
                 res.sendStatus(200);
