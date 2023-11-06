@@ -1,7 +1,5 @@
 // define all required packages
 const express = require('express');
-const pg = require('pg');
-const bcrypt = require('bcrypt');
 const { createClient } = require('@supabase/supabase-js');
 //define port
 const port = process.env.PORT || 3000;
@@ -14,14 +12,6 @@ const superbase = createClient(superbaseUrl, superbaseKey);
 // variables to store tokens
 let refreshToken;
 let token;
-// conect with DB
-const client = new pg.Client({
-    host: process.env.DBHOST,
-    port: process.env.DBPORT,
-    user: process.env.DBUSER,
-    password: process.env.DBPASSWORD
-});
-client.connect();
 // define application itself
 const app = express();
 // define middleware
@@ -65,8 +55,41 @@ app.use((req, res, next) => {
     next();
 });
 // define method handlers
-app.get('/me', (req, res) => {
-    //
+app.get('/me', (req, res, next) => {
+    if(!req.headers.authorization) {
+        res.send('Request header does not contain authorization key. JWT token is required\n');
+        next();
+        return;
+    }
+    const jwt = req.headers.authorization.split(' ')[1];
+    if(!jwt) {
+        res.send("Unproper Authorization format. You should use Bearer your_token template\n");
+        next();
+        return;
+    }
+    try {
+        superbase.auth.getUser(jwt).then(response => {
+            if(!response.data.user) {
+                res.send("Invalid JWT token\n");
+                next();
+                return;
+            }
+            res.send(JSON.stringify({
+                "success": true,
+                "data": {
+                    "id": response.data.user.id,
+                    "email": response.data.user.email
+                }
+            }, null, 2));
+        });
+    } catch(exception) {
+        res.send(JSON.stringify({
+            "success": false,
+            "data": null
+        }, null, 2));
+        next();
+        return;
+    }
 });
 app.post('/auth/sign-in', (req, res, next) => {
     req.on('end', () => {
@@ -76,6 +99,11 @@ app.post('/auth/sign-in', (req, res, next) => {
                     email: req.body.email,
                     password: req.body.password
                 }).then(response => {
+                    if(!response.data.user) {
+                        res.send('Invalid credential\n');
+                        next();
+                        return;
+                    }
                     token = response.data.session.access_token;
                     refreshToken = response.data.session.refresh_token;
                     res.send(JSON.stringify({
@@ -86,44 +114,53 @@ app.post('/auth/sign-in', (req, res, next) => {
                             "refreshToken": refreshToken
                         }
                     }, null, 2) + '\n');
-                })
+                });
             } catch(exception) {
-                console.error(exception.message);
+                res.send(JSON.stringify({
+                    "success": false,
+                    "data": null
+                }, null, 2));
             }
         }
     });
 });
-app.post('/auth/sign-up', (req, res) => {
+app.post('/auth/sign-up', (req, res, next) => {
     req.on('end', () => {
         if(req.body && req.body.email && /.{1,}@.{1,}\.{1,}/.test(req.body.email) && req.body.password) {
             try {
-                bcrypt.genSalt((err, salt) => {
-                    if(err) {
-                        console.error(`genSaltError: ${err.message}`);
+                if(req.body.password.length < 6) {
+                    res.send("Password should have at least 6 signs\n");
+                    next();
+                    return;
+                }
+                superbase.auth.signUp({
+                    email: req.body.email,
+                    password: req.body.password
+                }).then(response => {
+                    if(!response.data.user) {
+                        console.log(response);
+                        res.send("Unable to create a new usser\n");
+                        next();
+                        return;
                     }
-                    bcrypt.hash(req.body.password, salt, (err, hash) => {
-                        if(err) {
-                            console.log(err.message);
+                    token = response.data.session.access_token,
+                    refreshToken = response.data.session.refresh_token;
+                    res.send(JSON.stringify({
+                        "success": true,
+                        "data": {
+                            "id": response.data.user.id,
+                            "accessToken": token,
+                            "refreshToken": refreshToken
                         }
-                        superbase.auth.signUp({
-                            email: req.body.email,
-                            password: hash,
-                        }).then(response => {
-                            token = response.data.session.access_token;
-                            refreshToken = response.data.session.refresh_token;
-                            res.send(JSON.stringify({
-                                "success": true,
-                                "data": {
-                                    "id": response.data.user.id,
-                                    "accessToken": token,
-                                    "refreshToken": refreshToken
-                                }
-                            }, null, 2) + '\n');
-                        })
-                    });
+                    }, null, 2));
                 });
             } catch(exception) {
-                console.error(exception.message);
+                res.send(JSON.stringify({
+                    "success": false,
+                    "data": null
+                }, null, 2));
+                next();
+                return;
             }
         }
     });
