@@ -100,6 +100,11 @@ app.post('/auth/sign-in', (req, res, next) => {
                     password: req.body.password
                 }).then(response => {
                     if(!response.data.user) {
+                        if(response.error) {
+                            res.send(response.error.message + '\n');
+                            next();
+                            return;
+                        }
                         res.send('Invalid credential\n');
                         next();
                         return;
@@ -139,6 +144,11 @@ app.post('/auth/sign-up', (req, res, next) => {
                 }).then(response => {
                     if(!response.data.user) {
                         console.log(response);
+                        if(response.error) {
+                            res.send(response.error.message + '\n');
+                            next();
+                            return;
+                        }
                         res.send("Unable to create a new usser\n");
                         next();
                         return;
