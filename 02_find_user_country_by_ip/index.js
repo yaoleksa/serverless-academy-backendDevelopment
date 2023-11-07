@@ -29,8 +29,11 @@ fs.createReadStream('IP2LOCATION-LITE-DB1.CSV').pipe(parse({delimiter: ',', from
 app.get('/', (req, res) => {
     const clientIP = req.header('x-forwarded-for') || req.socket.remoteAddress;
     const IPasNum = IPtoNum(clientIP);
-    const result = countries.filter(e => parseInt(e[0]) <= IPasNum && parseInt(e[1]) >= IPasNum)[0];
-    res.send(`${result[3]} - ${clientIP}`);
+    const result = countries.filter(el => el[0] <= IPasNum && IPasNum <= el[1]);
+    if(result.length != 1) {
+        console.log(result);
+    }
+    res.send(`${result[0][3]} - ${clientIP}`);
 });
 app.listen({
     port: 3000,
