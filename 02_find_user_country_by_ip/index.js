@@ -18,14 +18,19 @@ const IPtoNum = (ip) => {
         console.error(exception.message);
     }
 }
-// read file with IP's range
+// variable to store IPs' range
+const countries = [];
+// read file with IPs' range
 fs.createReadStream('IP2LOCATION-LITE-DB1.CSV').pipe(parse({delimiter: ',', from_line: 1})).on('data', row => {
-    //console.log(row[3]);
+    countries.push(row);
 }).on('end', () => {
     console.log('end');
-})
+});
 app.get('/', (req, res) => {
-    res.send(`your address is: ${IPtoNum(req.header('x-forwarded-for') || req.socket.remoteAddress)}`);
+    const IPasNum = IPtoNum(req.header('x-forwarded-for') || req.socket.remoteAddress);
+    console.log(countries.filter(e => parseInt(e[0]) <= IPasNum && parseInt(e[1]) >= IPasNum));
+    res.send(`your address is: ${req.header('x-forwarded-for') || req.socket.remoteAddress} 
+    in single number format: ${IPtoNum(req.header('x-forwarded-for') || req.socket.remoteAddress)}`);
 });
 app.listen({
     port: 3000,
