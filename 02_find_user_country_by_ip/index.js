@@ -24,13 +24,13 @@ const countries = [];
 fs.createReadStream('IP2LOCATION-LITE-DB1.CSV').pipe(parse({delimiter: ',', from_line: 1})).on('data', row => {
     countries.push(row);
 }).on('end', () => {
-    console.log('end');
+    console.log('finish read file');
 });
 app.get('/', (req, res) => {
-    const IPasNum = IPtoNum(req.header('x-forwarded-for') || req.socket.remoteAddress);
-    console.log(countries.filter(e => parseInt(e[0]) <= IPasNum && parseInt(e[1]) >= IPasNum));
-    res.send(`your address is: ${req.header('x-forwarded-for') || req.socket.remoteAddress} 
-    in single number format: ${IPtoNum(req.header('x-forwarded-for') || req.socket.remoteAddress)}`);
+    const clientIP = req.header('x-forwarded-for') || req.socket.remoteAddress;
+    const IPasNum = IPtoNum(clientIP);
+    const result = countries.filter(e => parseInt(e[0]) <= IPasNum && parseInt(e[1]) >= IPasNum)[0];
+    res.send(`${result[3]} - ${clientIP}`);
 });
 app.listen({
     port: 3000,
