@@ -1,8 +1,6 @@
 // define all required packages
 const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
 const { Client } = require('pg');
-const { response } = require('express');
 // define database client
 const client = new Client({
     user: process.env.USER,
@@ -13,14 +11,44 @@ const client = new Client({
 });
 // Connect with database
 client.connect();
-// define supabase client
-const supabase = createClient(process.env.URL, process.env.KEY);
 // define application itself
 const app = express();
+// define middleware
+app.use((req, res, next) => {
+    if(req.method == 'GET') {
+        next();
+        return;
+    }
+    const data = [];
+    req.on('data', chunk => {
+        data.push(chunk);
+    });
+    req.on('end', () => {
+        try {
+            req.body = JSON.parse(Buffer.concat(data).toString());
+        } catch(exception) {
+            res.send(exception.message);
+            next();
+            return;
+        }
+    });
+    next();
+});
 app.get('/json', (req, res) => {
     client.query('SELECT * FROM "jsonbase";').then(response => {
         res.send(JSON.stringify(response.rows, null, 2));
     });
+});
+app.put('/json', (req, res, next) => {
+    req.on('end', () => {
+        client.query('INSERT INTO jsonbase(name, data) VALUES($1, $2) RETURNING *', [req.body.name, req.body.data]).then(response => {
+            res.send(response.rows);
+        }).catch(exception => {
+            res.send(exception.message);
+            next();
+            return;
+        })
+    })
 });
 app.listen({
     port: process.env.PORT,
