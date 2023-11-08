@@ -1,0 +1,7 @@
+If you wanna get all data from database just make GET API call to ../json endpoint
+If you wanna get some specific columns you can make GET API call to ../json?select=desired_field endpoint
+You can specify few columns as well. Example GET ../json?select=id,name to get name and id columns
+If you wanna get specific records you can use "where" url query parameter. Example GET ../select=data&where=id=5 to get record with id 5
+To store data into database you can use PUT API call with body as name=desired_name, data=your_data_to_store to endpoint ../json. 
+Example PUT ../json -d '{"name": "myName", "age": 45}'
+Also you can use another approach to store data. You can specify url query parameters with name and path_to_file. Example PUT API call to ../json?file=./json20.json&name=my

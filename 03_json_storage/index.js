@@ -30,12 +30,12 @@ app.use((req, res, next) => {
             data.push(chunk);
         }
     });
-    if(data.length == 0) {
-        next();
-        return;
-    }
     req.on('end', () => {
         try {
+            if(data.length == 0) {
+                next();
+                return;
+            }
             req.body = JSON.parse(Buffer.concat(data).toString());
         } catch(exception) {
             res.send(exception.message);
@@ -70,6 +70,7 @@ app.get('/json', (req, res, next) => {
 });
 app.put('/json', (req, res, next) => {
     if(req.query.file && req.query.name) {
+        console.log(req.query.file);
         const content = fs.readFileSync(req.query.file);
         client.query('INSERT INTO jsonbase(name, data) VALUES($1, $2) RETURNING *', [req.query.name, content]).then(response => {
             res.send(response.rows);
