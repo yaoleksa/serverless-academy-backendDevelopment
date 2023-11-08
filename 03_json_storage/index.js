@@ -34,10 +34,28 @@ app.use((req, res, next) => {
     });
     next();
 });
-app.get('/json', (req, res) => {
-    client.query('SELECT * FROM "jsonbase";').then(response => {
-        res.send(JSON.stringify(response.rows, null, 2));
-    });
+app.get('/json', (req, res, next) => {
+    if(Object.keys(req.query).length > 0 && req.query.select && req.query.where) {
+        client.query(`SELECT ${req.query.select} FROM "jsonbase" WHERE ${req.query.where};`).then(response => {
+            try {
+                res.send(JSON.stringify(response.rows, null, 2));
+            } catch(exception) {
+                res.send(exception.message);
+            }
+            next();
+            return;
+        });
+    } else if(Object.keys(req.query).length > 0 && req.query.select && !req.query.where) {
+        client.query(`SELECT ${req.query.select} FROM "jsonbase";`).then(response => {
+            res.send(JSON.stringify(response.rows, null, 2));
+            next();
+            return;
+        });
+    } else {
+        client.query('SELECT * FROM "jsonbase";').then(response => {
+            res.send(JSON.stringify(response.rows, null, 2));
+        });
+    }
 });
 app.put('/json', (req, res, next) => {
     req.on('end', () => {
