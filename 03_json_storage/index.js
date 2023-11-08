@@ -1,6 +1,7 @@
 // define all required packages
 const express = require('express');
 const { Client } = require('pg');
+const fs = require('fs');
 // define database client
 const client = new Client({
     user: process.env.USER,
@@ -19,10 +20,20 @@ app.use((req, res, next) => {
         next();
         return;
     }
+    if(Object.keys(req.query).length > 0) {
+        next();
+        return;
+    }
     const data = [];
     req.on('data', chunk => {
-        data.push(chunk);
+        if(chunk) {
+            data.push(chunk);
+        }
     });
+    if(data.length == 0) {
+        next();
+        return;
+    }
     req.on('end', () => {
         try {
             req.body = JSON.parse(Buffer.concat(data).toString());
@@ -58,15 +69,31 @@ app.get('/json', (req, res, next) => {
     }
 });
 app.put('/json', (req, res, next) => {
-    req.on('end', () => {
-        client.query('INSERT INTO jsonbase(name, data) VALUES($1, $2) RETURNING *', [req.body.name, req.body.data]).then(response => {
+    if(req.query.file && req.query.name) {
+        const content = fs.readFileSync(req.query.file);
+        client.query('INSERT INTO jsonbase(name, data) VALUES($1, $2) RETURNING *', [req.query.name, content]).then(response => {
             res.send(response.rows);
+            next();
+            return;
         }).catch(exception => {
+            console.log(exception.message);
             res.send(exception.message);
             next();
             return;
-        })
-    })
+        });
+    } else {
+        req.on('end', () => {
+            if(req.body && req.body.name && req.body.data && Object.keys(req.query).length == 0) {
+                client.query('INSERT INTO jsonbase(name, data) VALUES($1, $2) RETURNING *', [req.body.name, req.body.data]).then(response => {
+                    res.send(response.rows);
+                }).catch(exception => {
+                    res.send(exception.message);
+                    next();
+                    return;
+                });
+            }
+        });
+    }
 });
 app.listen({
     port: process.env.PORT,
