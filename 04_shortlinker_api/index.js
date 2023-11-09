@@ -1,12 +1,27 @@
 // define all required packages
-const shortUrl = require('node-url-shortener');
 const express = require('express');
+const openurl = require('openurl');
+const { Client } = require('pg');
 // define port number
-const port = 3000;
+const port = process.env.PORT;
+// define database client
+const client = new Client({
+    host: process.env.HOST,
+    database: process.env.NAME,
+    port: process.env.DBPORT,
+    user: process.env.USER,
+    password: process.env.PASSWORD
+});
+// connect to database
+client.connect();
 // define application itself
 const app = express();
 // define middleware
 app.use((req, res, next) => {
+    if(req.method == 'GET') {
+        next();
+        return;
+    }
     const data = [];
     req.on('data', chunk => {
         data.push(chunk);
@@ -17,7 +32,13 @@ app.use((req, res, next) => {
     next();
     return;
 });
-// define POST method handler
+// define method handlers
+app.get('/:id', (req, res) => {
+    client.query('SELECT url FROM "urlmap" WHERE id=$1', [req.params.id]).then(response => {
+        openurl.open(response.rows[0].url);
+        res.send(response.rows[0].url + '\n');
+    });
+});
 app.post('/', (req, res, next) => {
     req.on('end', () => {
         if(!req.body || (!/^http:\/\/.{1,}/g.test(req.body) && !/^https:\/\/.{1,}/g.test(req.body))) {
@@ -25,15 +46,9 @@ app.post('/', (req, res, next) => {
             next();
             return;
         }
-        shortUrl.short(req.body, (err, url) => {
-            if(err) {
-                res.send(err.message);
-                next();
-                return;
-            } else if(url) {
-                res.send(url + '\n');
-            }
-        });
+        client.query('INSERT INTO urlmap(url) VALUES($1) RETURNING *', [req.body]).then(response => {
+            res.send(req.protocol + '://' + req.get('host') + '/' + response.rows[0].id + '\n');
+        })
     });
 });
 app.listen(port, () => {
