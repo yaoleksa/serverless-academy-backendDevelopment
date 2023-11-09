@@ -33,8 +33,13 @@ app.use((req, res, next) => {
     return;
 });
 // define method handlers
-app.get('/:id', (req, res) => {
+app.get('/:id', (req, res, next) => {
     client.query('SELECT url FROM "urlmap" WHERE id=$1', [req.params.id]).then(response => {
+        if(!response || !response.rows || !response.rows[0] || !response.rows[0].url) {
+            res.send('Such url does not exist\n');
+            next();
+            return;
+        }
         openurl.open(response.rows[0].url);
         res.send(response.rows[0].url + '\n');
     });
