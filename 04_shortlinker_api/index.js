@@ -17,9 +17,14 @@ app.use((req, res, next) => {
     next();
     return;
 });
-// define GET method handler
-app.get('/', (req, res, next) => {
+// define POST method handler
+app.post('/', (req, res, next) => {
     req.on('end', () => {
+        if(!req.body || (!/^http:\/\/.{1,}/g.test(req.body) && !/^https:\/\/.{1,}/g.test(req.body))) {
+            res.send('Not valid url! Please, try again\n');
+            next();
+            return;
+        }
         shortUrl.short(req.body, (err, url) => {
             if(err) {
                 res.send(err.message);
