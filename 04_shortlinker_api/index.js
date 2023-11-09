@@ -34,6 +34,10 @@ app.use((req, res, next) => {
 });
 // define method handlers
 app.get('/:id', (req, res, next) => {
+    if(req.params.id == 'favicon.ico') {
+        next();
+        return;
+    }
     client.query('SELECT url FROM "urlmap" WHERE id=$1', [req.params.id]).then(response => {
         if(!response || !response.rows || !response.rows[0] || !response.rows[0].url) {
             res.send('Such url does not exist\n');
