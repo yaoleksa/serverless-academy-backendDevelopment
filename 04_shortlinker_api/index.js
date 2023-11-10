@@ -48,6 +48,7 @@ app.get('/:id', (req, res, next) => {
             return;
         }
         if(typeof window != 'undefined') {
+            console.log('good');
             window.open(response.rows[0].url, '_self');
         } else {
             openurl.open(response.rows[0].url);
