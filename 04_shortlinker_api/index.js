@@ -2,8 +2,11 @@
 const express = require('express');
 const openurl = require('openurl');
 const { Client } = require('pg');
+const ShortUniqueId = require('short-unique-id');
 // define port number
 const port = process.env.PORT;
+// define ID generator
+const uid = new ShortUniqueId({length: 10});
 // define database client
 const client = new Client({
     host: process.env.HOST,
@@ -44,7 +47,11 @@ app.get('/:id', (req, res, next) => {
             next();
             return;
         }
-        openurl.open(response.rows[0].url);
+        if(typeof window != 'undefined') {
+            window.open(response.rows[0].url, '_self');
+        } else {
+            openurl.open(response.rows[0].url);
+        }
         res.send(response.rows[0].url + '\n');
     });
 });
@@ -55,9 +62,15 @@ app.post('/', (req, res, next) => {
             next();
             return;
         }
-        client.query('INSERT INTO urlmap(url) VALUES($1) RETURNING *', [req.body]).then(response => {
-            res.send(req.protocol + '://' + req.get('host') + '/' + response.rows[0].id + '\n');
-        })
+        client.query('SELECT id, url FROM "urlmap" WHERE url=$1', [req.body]).then(response => {
+            if(response.rows.length == 0) {
+                client.query('INSERT INTO urlmap(id, url) VALUES($1, $2) RETURNING *', [uid.rnd(), req.body]).then(response => {
+                    res.send(req.protocol + '://' + req.get('host') + '/' + response.rows[0].id + '\n');
+                });
+            } else {
+                res.send(req.protocol + '://' + req.get('host') + '/' + response.rows[0].id + '\n');
+            }
+        });
     });
 });
 app.listen(port, () => {
