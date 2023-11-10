@@ -47,12 +47,7 @@ app.get('/:id', (req, res, next) => {
             next();
             return;
         }
-        if(typeof window != 'undefined') {
-            console.log('good');
-            window.open(response.rows[0].url, '_self');
-        } else {
-            openurl.open(response.rows[0].url);
-        }
+        openurl.open(response.rows[0].url);
         res.send(response.rows[0].url + '\n');
     });
 });
