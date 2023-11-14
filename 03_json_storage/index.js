@@ -2,7 +2,6 @@
 const express = require('express');
 const fs = require('fs');
 const { createClient } = require('@supabase/supabase-js');
-const { parse } = require('csv-parse');
 //define port
 const port = process.env.PORT || 3000;
 // define DB url
