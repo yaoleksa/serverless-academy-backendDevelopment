@@ -213,12 +213,16 @@ app.post('/auth/sign-up', (req, res, next) => {
 });
 app.put('/:table/:name', (req, res, next) => {
     if(req.query.file) {
-        const content = fs.readFileSync(req.query.file);
+        const content = JSON.parse(fs.readFileSync(req.query.file).toString());
         superbase.from(req.params.table).insert({
             name: req.params.name,
             data: content
         }).then(response => {
-            res.send(JSON.stringify(response.status, null, 2) + '\n');
+            if(response.status == '201') {
+                res.send(JSON.stringify(content, null, 2) +'\n');
+            } else {
+                res.send(JSON.stringify(response, null, 2) + '\n');
+            }
             next();
             return;
         });
@@ -229,7 +233,11 @@ app.put('/:table/:name', (req, res, next) => {
                 name: req.params.name,
                 data: req.body
             }).then(response => {
-                res.send(JSON.stringify(response, null, 2) + '\n');
+                if(response.status == '201') {
+                    res.send(JSON.stringify(req.body, null, 2) + '\n');
+                } else {
+                    res.send(JSON.stringify(response, null, 2) + '\n');
+                }
             });
         }
     });
