@@ -15,7 +15,6 @@ let token;
 // define application itself
 const app = express();
 // define middleware
-app.use(express.json({extended: false}));
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', 'application/json');
