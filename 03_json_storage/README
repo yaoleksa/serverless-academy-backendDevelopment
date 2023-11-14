@@ -1,6 +1,1 @@
-To run server type `env $(cat *.env | xargs) node index.js` into terminal (Linux only)
-*****************************************************************************************
-To store JSON file content to database you can use `file` url query parameter. Example `curl -X PUT domian/content?file=./json20.json`, in this way you can upload `json20.json`
-contebt to database
-*******************************************************************************************************
-!!! DON'T FORGET PROPERLY USE QUOTATION MARK
+To run application type into terminal next command `env $(cat *.env | xargs) node ./index.js` (Linux only)
