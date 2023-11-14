@@ -161,11 +161,17 @@ app.post('/', (req, res, next) => {
                 res.send(JSON.stringify(response.data, null, 2) + '\n');
                 return;
             } else {
+                const id = uid.rnd();
                 superbase.from('urlmap').insert({
-                    id: uid.rnd(),
+                    id: id,
                     url: req.body
                 }).then(response => {
-                    res.send(JSON.stringify(response, null, 2) + '\n');
+                    if(response.status == '201') {
+                        res.send(req.protocol + '://' + req.get('host') + '/' + id + '\n');
+                        return;
+                    } else {
+                        res.send(JSON.stringify(response, null, 2) + '\n');
+                    }
                 })
             }
         });
